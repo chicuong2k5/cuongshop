@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load money %}
+{% load custom_tags %}
+{% block content %}
+<style>
+    .star-bar {
+    background:#eee;
+    width:220px;
+    height:8px;
+    border-radius:5px;
+    margin:0 10px;
+}
+
+.star-fill {
+    background:#ff9800;
+    height:8px;
+    border-radius:5px;
+}
+</style>
+<div class="container mt-5 shopee-detail">
+
+<div class="row bg-white p-4 rounded-3 shadow-sm">
+
+ <!-- LEFT IMAGE -->
+<div class="col-lg-5">
+
+    <!-- ẢNH CHÍNH -->
+    <div class="main-image mb-3 text-center">
+
+        {% if media %}
+            {% if media.first.media_type == "image" %}
+                <img id="mainProductImage"
+                     src="{{ media.first.file.url }}"
+                     class="img-fluid rounded w-100">
+            {% else %}
+                <video id="mainProductImage"
+       class="img-fluid rounded w-100"
+       autoplay
+       muted
+       loop
+       playsinline>
+                    <source src="{{ media.first.file.url }}">
+                </video>
+            {% endif %}
+
+        {% elif fallback_image %}
+            <img id="mainProductImage"
+                 src="{{ fallback_image }}"
+                 class="img-fluid rounded w-100">
+
+        {% else %}
+            <img id="mainProductImage"
+                 src="https://via.placeholder.com/500x500?text=No+Image"
+                 class="img-fluid rounded w-100">
+        {% endif %}
+
+    </div>
+    <!-- THUMBNAIL -->
+    {% if media %}
+    <div class="d-flex gap-2 flex-wrap justify-content-start">
+
+        {% for item in media %}
+            {% if item.media_type == "image" %}
+                <img src="{{ item.file.url }}"
+                     class="thumb-img"
+                     onclick="changeMainMedia('image','{{ item.file.url }}')">
+            {% else %}
+                <div class="video-thumb"
+     onclick="changeMainMedia('video','{{ item.file.url }}')">
+
+    <img src="{{ item.thumbnail.url }}"
+         class="thumb-img">
+
+    <div class="play-overlay">
+        ▶
+    </div>
+
+</div>
+            {% endif %}
+        {% endfor %}
+
+    </div>
+    {% endif %}
+
+</div>
+    <!-- RIGHT INFO -->
+    <div class="col-lg-7">
+
+        <h4 class="product-title mb-3">
+            {{ product.name }}
+        </h4>
+
+        <!-- PRICE BOX -->
+<div class="price-box p-3 mb-4">
+    <div class="mb-2 text-muted small">
+        🚚 Nhận từ 3-5 ngày • Miễn phí vận chuyển
+    </div>
+
+    {% if product.discount_percent > 0 %}
+        <span class="old-price">
+            {{ product.price|vnd }}đ
+        </span>
+
+        <span class="new-price">
+            {{ product.final_price|vnd }}đ
+        </span>
+    {% else %}
+        <span class="new-price">
+            {{ product.final_price|vnd }}đ
+        </span>
+    {% endif %}
+</div>
+        <div class="mb-2 small text-muted d-flex align-items-center gap-2">
+    <span>🛡️ Trả hàng miễn phí 15 ngày</span>
+    <span>·</span>
+    <span>Bảo hiểm Thiết bị điện tử</span>
+</div>
+<div class="mb-3 text-muted small">
+    ⭐ {{ product.avg_rating|floatformat:1 }} |
+    Đã bán {{ product.total_sold }}
+</div>
+        <!-- COLOR -->
+    <!-- MÀU SẮC -->
+<div class="mb-3">
+<h6>{{ product.variant_label }}</h6>
+
+<div class="variant-wrapper">
+    {% for v in colors %}
+        <button type="button"
+                class="variant-btn"
+                onclick="selectVariant(this, '{{ v.id }}')">
+            {% if v.image %}
+                <img src="{{ v.image.url }}" class="variant-thumb">
+            {% endif %}
+
+            <span>{{ v.name }}</span>
+
+        </button>
+    {% endfor %}
+</div>
+<input type="hidden"
+       name="color"
+       id="selectedColor"
+       value="{{ product.productcolor_set.first.name }}">
+        <!-- QUANTITY -->
+        <div class="mb-4">
+            <label class="fw-bold">Số lượng</label>
+            <div class="quantity-box mt-2 d-flex align-items-center">
+
+    <button type="button"
+            class="qty-btn"
+            onclick="changeQty(-1)">-</button>
+
+    <input type="number"
+           id="quantityInput"
+           value="1"
+           min="1"
+           class="form-control text-center"
+           style="width:70px;">
+
+    <button type="button"
+            class="qty-btn"
+            onclick="changeQty(1)">+</button>
+
+</div>
+        </div>
+
+        <!-- BUTTON -->
+        <div class="d-flex gap-3">
+
+            <a href="{% url 'add_to_cart' product.id %}"
+               class="btn btn-cart flex-fill">
+                🛒 Thêm vào giỏ
+            </a>
+
+            <a href="{% url 'checkout' product.id %}"
+               class="btn btn-buy-now flex-fill">
+                Mua ngay
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+</div>
+<hr>
+<h5>Đánh giá sản phẩm ({{ total_reviews }})</h5>
+
+{% for star in "54321" %}
+    {% with star_int=star|add:"0" %}
+    <div class="d-flex align-items-center mb-2">
+        <span style="width:60px;">{{ star_int }} ⭐</span>
+
+        <div class="star-bar">
+            <div class="star-fill"
+     data-width="{{ star_percent|get_item:star_int }}">
+</div>
+        </div>
+
+        <span>
+            {{ star_counts|get_item:star_int }}
+            ({{ star_percent|get_item:star_int }}%)
+        </span>
+    </div>
+    {% endwith %}
+{% endfor %}
+{% if user_can_review %}
+
+<form method="POST"
+      enctype="multipart/form-data"
+      action="{% url 'add_review' product.id %}">
+    {% csrf_token %}
+
+    <select name="rating" class="form-select w-25 mb-2">
+        <option value="5">5 ⭐</option>
+        <option value="4">4 ⭐</option>
+        <option value="3">3 ⭐</option>
+        <option value="2">2 ⭐</option>
+        <option value="1">1 ⭐</option>
+    </select>
+
+    <textarea name="comment"
+              class="form-control mb-2"
+              placeholder="Nhập đánh giá..."></textarea>
+
+    <input type="file"
+           name="image"
+           class="form-control mb-2">
+
+    <button class="btn btn-warning">
+        Gửi đánh giá
+    </button>
+</form>
+
+{% elif user.is_authenticated and user_already_reviewed %}
+    <p class="text-success">
+        Bạn đã đánh giá sản phẩm này.
+    </p>
+
+{% elif user.is_authenticated %}
+    <p class="text-danger">
+        Bạn chỉ có thể đánh giá sau khi đơn hàng đã được giao.
+    </p>
+
+{% else %}
+    <p>Vui lòng đăng nhập để đánh giá.</p>
+{% endif %}
+<hr>
+
+<h6>Tất cả đánh giá</h6>
+
+{% for r in reviews %}
+<div class="border p-2 mb-2 rounded">
+    {% if r.image %}
+    <img src="{{ r.image.url }}"
+         style="width:120px; border-radius:6px;">
+{% endif %}
+    <strong>{{ r.user.username }}</strong>
+    ⭐ {{ r.rating }}
+    <br>
+    <small>{{ r.created_at|date:"d/m/Y" }}</small>
+    <p>{{ r.comment }}</p>
+</div>
+{% empty %}
+<p>Chưa có đánh giá nào.</p>
+{% endfor %}
+</p>
+<script>
+function selectColor(btn){
+
+    // Xóa active tất cả
+    document.querySelectorAll('.color-btn')
+            .forEach(el => el.classList.remove('active'));
+
+    // Thêm active cho cái được chọn
+    btn.classList.add('active');
+
+    // Gán giá trị vào hidden input
+    document.getElementById("selectedColor").value = btn.dataset.value;
+}
+</script>
+<script>
+function changeMainMedia(type, url){
+
+    const container = document.querySelector(".main-image");
+
+    if(type === "image"){
+        container.innerHTML = `
+            <img id="mainProductImage"
+                 src="${url}"
+                 class="img-fluid rounded w-100">
+        `;
+    }else{
+        container.innerHTML = `
+            <video id="mainProductImage"
+                   class="img-fluid rounded w-100"
+                   autoplay
+                   muted
+                   loop
+                   playsinline>
+                <source src="${url}">
+            </video>
+        `;
+    }
+
+}
+function loadColorImages(colorId){
+    fetch(`/get-color-image/${colorId}/`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.images.length > 0){
+                changeMainMedia('image', data.images[0]);
+            }
+        });
+}
+</script>
+<script>
+function changeQty(amount){
+    let input = document.getElementById("quantityInput");
+    let current = parseInt(input.value) || 1;
+
+    current += amount;
+
+    if(current < 1){
+        current = 1;
+    }
+
+    input.value = current;
+}
+</script>
+<script>
+function selectVariant(btn, variantId){
+
+    // Remove active
+    document.querySelectorAll(".variant-btn")
+            .forEach(el => el.classList.remove("active"));
+
+    // Add active
+    btn.classList.add("active");
+
+    // Lưu id vào hidden
+    document.getElementById("selectedColor").value = variantId;
+
+    // Gọi load ảnh
+    loadColorImages(variantId);
+}
+</script>
+<script>
+document.addEventListener("mouseover", function(e){
+    if(e.target.id === "mainProductImage" && e.target.tagName === "VIDEO"){
+        e.target.muted = false;
+    }
+});
+
+document.addEventListener("mouseout", function(e){
+    if(e.target.id === "mainProductImage" && e.target.tagName === "VIDEO"){
+        e.target.muted = true;
+    }
+});
+</script>
+<script>
+document.querySelectorAll(".star-fill").forEach(el => {
+    el.style.width = el.dataset.width + "%";
+});
+</script>
+{% endblock %}

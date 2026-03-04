@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container" style="max-width:400px">
+    <h3 class="neon-text mb-4">Đăng ký</h3>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button class="btn btn-neon w-100">Đăng ký</button>
+    </form>
+</div>
+
+{% endblock %}

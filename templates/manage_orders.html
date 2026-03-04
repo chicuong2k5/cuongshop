@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3 class="neon-text mb-4">Quản lý đơn hàng</h3>
+
+<!-- 🔎 SEARCH + FILTER -->
+<form method="GET" class="row mb-3 g-2">
+
+    <div class="col-md-4">
+        <input type="text"
+               name="search"
+               class="form-control"
+               placeholder="Tìm theo username..."
+               value="{{ request.GET.search }}">
+    </div>
+
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">-- Lọc trạng thái --</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="shipping">Đang giao</option>
+            <option value="delivered">Đã giao</option>
+            <option value="rejected">Từ chối</option>
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <button class="btn btn-neon w-100">Lọc</button>
+    </div>
+
+</form>
+
+<table class="table table-dark">
+    <tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Số SP</th>
+        <th>Trạng thái</th>
+        <th>Tổng tiền</th>
+        <th>Cập nhật</th>
+    </tr>
+
+    {% for o in page_obj %}
+    <tr>
+        <td>#{{ o.id }}</td>
+        <td>{{ o.user.username }}</td>
+        <td>{{ o.total_items|default:0 }}</td>
+
+        <td>{{ o.get_status_display }}</td>
+
+        <td>{{ o.total_price|floatformat:0 }}đ</td>
+
+        <!-- 🎯 Dropdown cập nhật trạng thái -->
+        <td>
+            <form method="POST"
+                  action="{% url 'update_order_status' o.id %}">
+                {% csrf_token %}
+                <select name="status"
+                        onchange="this.form.submit()"
+                        class="form-select form-select-sm">
+
+                    <option value="pending" {% if o.status == 'pending' %}selected{% endif %}>Chờ duyệt</option>
+                    <option value="confirmed" {% if o.status == 'confirmed' %}selected{% endif %}>Đã xác nhận</option>
+                    <option value="shipping" {% if o.status == 'shipping' %}selected{% endif %}>Đang giao</option>
+                    <option value="delivered" {% if o.status == 'delivered' %}selected{% endif %}>Đã giao</option>
+                    <option value="rejected" {% if o.status == 'rejected' %}selected{% endif %}>Từ chối</option>
+
+                </select>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- 📄 Pagination -->
+<nav>
+    <ul class="pagination">
+
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}">
+                    «
+                </a>
+            </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">
+                {{ page_obj.number }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}">
+                    »
+                </a>
+            </li>
+        {% endif %}
+
+    </ul>
+</nav>
+
+{% endblock %}

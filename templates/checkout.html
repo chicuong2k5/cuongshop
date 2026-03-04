@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load money %}
+{% block content %}
+<style>
+.is-invalid{
+    border: 2px solid #ff4d4f !important;
+    box-shadow: 0 0 5px rgba(255,77,79,0.5);
+}
+</style>
+<div class="checkout-wrapper py-5">
+
+    <div class="checkout-container">
+
+        <h3 class="neon-text mb-4">Thanh toán</h3>
+<div class="checkout-steps mb-4">
+    <div class="step active">1. Giỏ hàng</div>
+    <div class="step active">2. Thanh toán</div>
+    <div class="step">3. Hoàn tất</div>
+</div>
+        <div class="row g-3 align-items-start">
+
+            <!-- LEFT: FORM -->
+            <div class="col-12 col-lg-8">
+
+                <div class="checkout-box p-4 rounded-4">
+
+                    <form method="POST" id="checkoutForm">
+                        {% csrf_token %}
+
+                       <div class="mb-3">
+    <label class="form-label">Họ và tên</label>
+    {{ form.full_name }}
+    <small class="text-danger error-msg" id="error_full_name"></small>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Địa chỉ giao hàng</label>
+    {{ form.address }}
+    <small class="text-danger error-msg" id="error_address"></small>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Số điện thoại</label>
+    {{ form.phone }}
+    <small class="text-danger error-msg" id="error_phone"></small>
+</div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Phương thức thanh toán</label>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio"
+                                       name="payment_method"
+                                       value="cod" checked>
+                                <label class="form-check-label">
+                                    Thanh toán khi nhận hàng (COD)
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio"
+                                       name="payment_method"
+                                       value="bank" id="bank">
+                                <label class="form-check-label">
+                                    Chuyển khoản ngân hàng
+                                </label>
+                            </div>
+
+                            <div id="bank-info"
+                                 class="bank-box p-3 mt-3 rounded-3 d-none">
+                                <h6 class="text-info mb-2">Thông tin chuyển khoản</h6>
+                                <p class="mb-1"><strong>Ngân hàng:</strong> Techcombank</p>
+                                <p class="mb-1"><strong>Số tài khoản:</strong>12092005555555</p>
+                                 <p class="mb-1"><strong>Tên:</strong> Đỗ Chí Cường</p>
+                                <p class="mb-0 text-warning">
+                                    Nội dung: Thanh toán đơn hàng + SĐT
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="secure-box mt-4 p-3 rounded-3">
+                            🔒 Thanh toán an toàn – Bảo mật 100%
+                        </div>
+
+                       <button type="button"
+        class="btn btn-neon w-100 mt-4 fs-5"
+        onclick="validateBeforeConfirm()">
+    Xác nhận đặt hàng
+</button>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- RIGHT: PRODUCT -->
+            <div class="col-12 col-lg-4">
+
+                <div class="product-summary p-4 rounded-4">
+
+                    <div class="text-center mb-3">
+                        <img src="{{ product.image.url }}"
+                             class="img-fluid rounded-3 summary-img">
+                    </div>
+
+                    <h5>{{ product.name }}</h5>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Tạm tính</span>
+                        <span class="text-warning fw-bold">
+    {{ total|vnd }}₫
+</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Phí vận chuyển</span>
+                        <span class="text-success">Miễn phí</span>
+                    </div>
+
+                    <hr>
+
+                    <h4 class="fw-bold text-warning fs-5">
+    Tổng Cộng: {{ total|vnd }}₫
+</h4>
+                    
+        
+        
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const bank = document.getElementById("bank");
+    const bankInfo = document.getElementById("bank-info");
+
+    bank.addEventListener("change", function () {
+        bankInfo.classList.toggle("d-none", !bank.checked);
+    });
+});
+</script>
+<script>
+function validateBeforeConfirm(){
+
+    let fullNameInput = document.querySelector('[name="full_name"]');
+    let addressInput  = document.querySelector('[name="address"]');
+    let phoneInput    = document.querySelector('[name="phone"]');
+
+    let isValid = true;
+
+    // Reset lỗi
+    document.querySelectorAll(".error-msg").forEach(el => el.innerText = "");
+    document.querySelectorAll("input, textarea").forEach(el => el.classList.remove("is-invalid"));
+
+    // Họ tên
+    if(fullNameInput.value.trim() === ""){
+        document.getElementById("error_full_name").innerText = "Vui lòng nhập họ và tên";
+        fullNameInput.classList.add("is-invalid");
+        isValid = false;
+    }
+
+    // Địa chỉ
+    if(addressInput.value.trim() === ""){
+        document.getElementById("error_address").innerText = "Vui lòng nhập địa chỉ";
+        addressInput.classList.add("is-invalid");
+        isValid = false;
+    }
+
+    // SĐT
+    let phoneValue = phoneInput.value.trim();
+
+    if(phoneValue === ""){
+        document.getElementById("error_phone").innerText = "Vui lòng nhập số điện thoại";
+        phoneInput.classList.add("is-invalid");
+        isValid = false;
+
+    } else if(!/^[0-9]+$/.test(phoneValue)){
+        document.getElementById("error_phone").innerText = "Số điện thoại chỉ được chứa số";
+        phoneInput.classList.add("is-invalid");
+        isValid = false;
+
+    } else if(phoneValue.length !== 10){
+        document.getElementById("error_phone").innerText = "Số điện thoại không hợp lệ ";
+        phoneInput.classList.add("is-invalid");
+        isValid = false;
+    }
+
+    if(!isValid) return;
+
+    let modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+</script>
+<div class="modal fade" id="confirmModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white rounded-4 p-4">
+      <h5 class="mb-3 neon-text">Xác nhận đơn hàng</h5>
+      <p>Bạn chắc chắn muốn đặt đơn hàng này?</p>
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-secondary"
+                data-bs-dismiss="modal">Hủy</button>
+        <button type="submit"
+                form="checkoutForm"
+                class="btn btn-neon">
+            Đồng ý đặt hàng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

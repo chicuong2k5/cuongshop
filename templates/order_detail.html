@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block content %}
+
+<style>
+.order-img{
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* ===== PROGRESS ===== */
+.order-progress{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:40px;
+}
+
+.order-progress .step{
+    text-align:center;
+    flex:1;
+}
+
+.order-progress .circle{
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    border:3px solid #ccc;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:auto;
+    font-weight:bold;
+}
+
+.order-progress .step.active .circle{
+    border-color:#22c55e;
+    background:#22c55e;
+    color:white;
+}
+
+.order-progress .line{
+    height:3px;
+    background:#ccc;
+    flex:1;
+}
+</style>
+
+
+<div class="card p-4">
+
+    <!-- TITLE -->
+    <h4 class="neon-text mb-4">
+        Chi tiết đơn #{{ order.id }}
+    </h4>
+
+    <!-- PROGRESS -->
+    <div class="order-progress">
+
+        <div class="step {% if order.status in 'pending confirmed shipping delivered' %}active{% endif %}">
+            <div class="circle">✓</div>
+            <p>Đã đặt</p>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="step {% if order.status in 'confirmed shipping delivered' %}active{% endif %}">
+            <div class="circle">✓</div>
+            <p>Xác nhận</p>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="step {% if order.status in 'shipping delivered' %}active{% endif %}">
+            <div class="circle">✓</div>
+            <p>Đang giao</p>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="step {% if order.status == 'delivered' %}active{% endif %}">
+            <div class="circle">✓</div>
+            <p>Hoàn thành</p>
+        </div>
+
+    </div>
+
+    <!-- INFO -->
+    <p><strong>Ngày đặt:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+
+    <p>
+        <strong>Trạng thái:</strong>
+        <span class="badge
+            {% if order.status == 'pending' %}bg-warning text-dark
+            {% elif order.status == 'confirmed' %}bg-info
+            {% elif order.status == 'shipping' %}bg-primary
+            {% elif order.status == 'delivered' %}bg-success
+            {% elif order.status == 'cancelled' %}bg-secondary
+            {% elif order.status == 'rejected' %}bg-danger
+            {% endif %}">
+            {{ order.get_status_display }}
+        </span>
+    </p>
+
+    <!-- TABLE -->
+    <table class="table table-dark align-middle mt-4">
+        <thead>
+            <tr>
+                <th>Sản phẩm</th>
+                <th class="text-center">Số lượng</th>
+                <th class="text-center">Đơn giá</th>
+                <th class="text-center">Thành tiền</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for item in items %}
+            <tr>
+
+                <!-- PRODUCT -->
+                <td>
+                    <div class="d-flex align-items-center gap-3">
+
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" class="order-img">
+                        {% else %}
+                            <img src="/media/products/default.png" class="order-img">
+                        {% endif %}
+
+                        <div>
+                            <div class="fw-bold">
+                                {{ item.product.name }}
+                            </div>
+
+                            {% if item.color %}
+                                <small class="text-muted">
+                                    Phân loại: {{ item.color.name }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </td>
+
+                <!-- QUANTITY -->
+                <td class="text-center">
+                    {{ item.quantity }}
+                </td>
+
+                <!-- UNIT PRICE -->
+                <td class="text-center text-info">
+                    {{ item.product.final_price|vnd }}₫
+                </td>
+
+                <!-- TOTAL -->
+                <td class="text-center text-warning fw-bold">
+                    {{ item.total_price|vnd }}₫
+                </td>
+
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTAL BOX -->
+    <div class="text-end mt-4">
+
+        <div class="d-flex justify-content-end gap-5">
+            <span>Tổng tiền hàng:</span>
+            <span>{{ order.total_price|vnd }}₫</span>
+        </div>
+
+        <div class="d-flex justify-content-end gap-5">
+            <span>Phí vận chuyển:</span>
+            <span class="text-success">Miễn phí</span>
+        </div>
+
+        <hr style="opacity:0.2">
+
+        <h4 class="text-danger fw-bold">
+            Thành tiền: {{ order.total_price|vnd }}₫
+        </h4>
+
+    </div>
+
+</div>
+
+{% endblock %}
