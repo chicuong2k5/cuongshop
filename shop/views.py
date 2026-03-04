@@ -20,7 +20,7 @@ from .forms import CheckoutForm
 from django.shortcuts import render, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import JsonResponse
-
+from django.db.models.functions import TruncMonth
 @staff_member_required
 def manage_orders(request):
     orders = Order.objects.all().order_by('-id')
@@ -337,6 +337,26 @@ def dashboard(request):
     rejected = Order.objects.filter(status='rejected').count()
     cancelled = Order.objects.filter(status='cancelled').count()
 
+    sales = Order.objects.filter(
+    status='delivered'
+).annotate(
+    month=TruncMonth('created_at')
+).values('month').annotate(
+    total=Sum('total_price')
+).order_by('month')
+
+    months = []
+    revenues = []
+
+    for s in sales:
+        months.append(s['month'].strftime("%m/%Y"))
+        revenues.append(float(s['total']))
+
+
+    months = json.dumps(months)
+    revenues = json.dumps(revenues)
+
+
     return render(request, 'dashboard.html', {
         'total_revenue': total_revenue,
         'today_revenue': today_revenue,
@@ -352,6 +372,8 @@ def dashboard(request):
         'delivered': delivered,
         'rejected': rejected,
         'cancelled': cancelled,
+        'months': months,
+        'revenues': revenues,
     })
 def product_detail(request, pk):
     product = Product.objects.get(id=pk)

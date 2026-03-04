@@ -133,8 +133,89 @@
 
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </div>
 </div>
+<!-- eslint-disable -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+// ===== DATA TỪ DJANGO =====
+const months = JSON.parse('{{ months|safe }}');
+const revenues = JSON.parse('{{ revenues|safe }}');
+
+// ===== CHART DOANH THU =====
+new Chart(
+    document.getElementById('revenueChart'),
+    {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Doanh thu',
+                data: revenues,
+                borderColor: '#00ffff',
+                backgroundColor: 'rgba(0,255,255,0.2)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "white" }
+                },
+                y: {
+                    ticks: { color: "white" }
+                }
+            }
+        }
+    }
+);
+
+
+// ===== CHART TRẠNG THÁI ĐƠN =====
+new Chart(
+    document.getElementById('statusChart'),
+    {
+        type: 'pie',
+        data: {
+            labels: ['Pending','Confirmed','Shipping','Delivered','Rejected'],
+            datasets: [{
+                data: [
+                    pending,
+                    confirmed,
+                    shipping,
+                    delivered,
+                    rejected
+                ],
+                backgroundColor: [
+                    '#f1c40f',
+                    '#3498db',
+                    '#9b59b6',
+                    '#2ecc71',
+                    '#e74c3c'
+                ]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            }
+        }
+    }
+);
+
+</script>
 {% endblock %}
