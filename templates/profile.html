@@ -20,26 +20,20 @@
 }
 
 /* ===== CARD ĐƠN HÀNG ===== */
-.order-card {
-    background: linear-gradient(145deg, #1f1f2e, #26263b);
-    border-radius: 12px;
-    padding: 18px;
-    margin-bottom: 20px;
-    transition: 0.3s;
+.order-card{
+background: linear-gradient(145deg,#1f1f2e,#26263b);
+border-radius:12px;
+padding:18px 22px;
+margin-bottom:18px;
+cursor:pointer;
+transition:0.25s;
 }
 
-.order-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 15px #00f0ff40;
+.order-card:hover{
+transform:translateY(-3px);
+box-shadow:0 0 20px #00f0ff55;
 }
-
 /* Sản phẩm trong đơn */
-.order-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #333;
-}
 
 .order-item:last-child {
     border-bottom: none;
@@ -65,37 +59,93 @@
 }
 
 /* Tổng tiền */
-.order-total {
-    text-align: right;
-    margin-top: 10px;
-    font-size: 15px;
+.order-total{
+display:flex;
+justify-content:flex-end;
+margin-top:10px;
+font-size:14px;
+color:#aaa;
 }
 
+.order-total span{
+color:#00f0ff;
+font-weight:600;
+margin-left:6px;
+}
 .order-total span {
     color: #00f0ff;
     font-weight: bold;
 }
 
-/* Nút mua lại */
-.btn-buy-again {
-    background: #ffcc00;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #000;
-    transition: 0.3s;
+.order-item{
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:15px 0;
+border-bottom:1px solid #333;
 }
 
-.btn-buy-again:hover {
-    background: #ffd633;
-    transform: scale(1.05);
+.order-left{
+display:flex;
+align-items:center;
+gap:15px;
+flex:1;
+}
+
+.order-info{
+max-width:360px;
+flex:1;
+}
+.order-name{
+font-weight:600;
+color:#fff;
+font-size:15px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+.order-qty{
+font-size:13px;
+color:#aaa;
+}
+
+.order-right{
+display:flex;
+align-items:center;
+gap:12px;
+justify-content:flex-end;
+min-width:220px;
+}
+
+.order-price{
+font-weight:bold;
+color:#ffcc00;
+font-size:16px;
+}
+.btn-buy-again{
+background:#ffcc00;
+border:none;
+padding:6px 14px;
+border-radius:6px;
+font-weight:600;
+color:#000;
+white-space:nowrap;
+}
+.order-link{
+display:block;
+text-decoration:none;
+color:inherit;
+}
+.order-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+font-size:14px;
+color:#ddd;
 }
 </style>
-User: {{ user.username }}
-<br>
-Orders count: {{ orders.count }}
 <div class="row">
 
     <!-- PROFILE CARD -->
@@ -133,14 +183,18 @@ Orders count: {{ orders.count }}
        {{ total_spent|vnd }} ₫
     </span>
 </div>{% if orders %}
-    {% for order in orders %}
+ {% for order in orders %}
+
+<a href="{% url 'order_detail' order.id %}" class="order-link">
+
 <div class="order-card">
 
     <!-- HEADER -->
-    <div class="d-flex justify-content-between mb-2">
-        <div>
-            <strong>Mã đơn #{{ order.id }}</strong>
+    <div class="order-header">
+        <div class="text-light">
+            Mã đơn #{{ order.id }}
         </div>
+
         <div class="text-info">
             {{ order.created_at|date:"d/m/Y" }}
         </div>
@@ -148,37 +202,38 @@ Orders count: {{ orders.count }}
 
     <!-- ITEMS -->
     {% for item in order.items.all %}
-    <div class="order-item">
+   <div class="order-item">
 
-        <div class="order-img">
-            {% if item.product.image %}
-                <img src="{{ item.product.image.url }}">
-            {% endif %}
-        </div>
-
-        <div class="flex-grow-1 ms-3">
-            <div class="order-name">
-                {{ item.product.name }}
-            </div>
-            <div class="text-muted">
-                x{{ item.quantity }}
-            </div>
-        </div>
-
-        <div class="order-price">
-            {{ item.product.final_price|vnd }} ₫
-        </div>
-
-        <div class="ms-3">
-            <a href="{% url 'add_to_cart' item.product.id %}"
-               class="btn-buy-again">
-                Mua lại
-            </a>
-        </div>
-
+<div class="order-left">
+    <div class="order-img">
+        {% if item.product.image %}
+        <img src="{{ item.product.image.url }}">
+        {% endif %}
     </div>
-    {% empty %}
-        <p class="text-danger">Đơn này không có sản phẩm!</p>
+
+    <div class="order-info">
+        <div class="order-name">
+            {{ item.product.name }}
+        </div>
+
+        <div class="order-qty">
+            x{{ item.quantity }}
+        </div>
+    </div>
+</div>
+
+<div class="order-right">
+    <div class="order-price">
+        {{ item.product.final_price|vnd }} ₫
+    </div>
+
+    <a href="{% url 'add_to_cart' item.product.id %}" 
+       class="btn-buy-again">
+        Mua lại
+    </a>
+</div>
+
+</div>
     {% endfor %}
 
     <!-- FOOTER -->
@@ -188,6 +243,9 @@ Orders count: {{ orders.count }}
     </div>
 
 </div>
+
+</a>
+
 {% endfor %}
 {% else %}
     <p>Bạn chưa có đơn hàng nào.</p>

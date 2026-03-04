@@ -46,19 +46,19 @@
         <div class="row mb-4">
             <div class="col-md-4">
                 <div class="card p-3 text-center">
-                    <h6>Pending</h6>
+                    <h6>Chờ duyệt</h6>
                     <h4 class="text-warning">{{ pending }}</h4>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card p-3 text-center">
-                    <h6>Approved</h6>
+                    <h6>Đã duyệt</h6>
                     <h4 class="text-success">{{ approved }}</h4>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card p-3 text-center">
-                    <h6>Rejected</h6>
+                    <h6>Từ chối</h6>
                     <h4 class="text-danger">{{ rejected }}</h4>
                 </div>
             </div>
@@ -109,8 +109,8 @@
                         <li class="list-group-item bg-dark text-light">
                             {{ p.product__name }}
                             <span class="badge bg-success float-end">
-                                {{ p.total_sold }}
-                            </span>
+🔥 {{ p.total_sold }} bán
+</span>
                         </li>
                         {% empty %}
                         <li class="list-group-item bg-dark text-light">
@@ -130,92 +130,237 @@
         <div class="card p-4">
             <canvas id="statusChart"></canvas>
         </div>
-
+<div class="card p-4 mt-4">
+    <canvas id="topProductChart"></canvas>
+</div>
+<div class="card p-4 mt-4">
+<canvas id="ordersChart"></canvas>
+</div>
     </div>
 </div>
 </div>
 <!-- eslint-disable -->
+{{ months|json_script:"months-data" }}
+{{ revenues|json_script:"revenues-data" }}
+{{ pending|json_script:"pending-data" }}
+{{ approved|json_script:"approved-data" }}
+{{ rejected|json_script:"rejected-data" }}
+{{ top_products_json|json_script:"top-products-data" }}
+{{ cancelled|json_script:"cancelled-data" }}
+{{ days|json_script:"days-data" }}
+{{ orders_count|json_script:"orders-data" }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
-// ===== DATA TỪ DJANGO =====
-const months = JSON.parse('{{ months|safe }}');
-const revenues = JSON.parse('{{ revenues|safe }}');
-
-// ===== CHART DOANH THU =====
-new Chart(
-    document.getElementById('revenueChart'),
-    {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                label: 'Doanh thu',
-                data: revenues,
-                borderColor: '#00ffff',
-                backgroundColor: 'rgba(0,255,255,0.2)',
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: "white"
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: "white" }
-                },
-                y: {
-                    ticks: { color: "white" }
-                }
-            }
-        }
-    }
+const products = JSON.parse(
+document.getElementById('top-products-data').textContent
 );
 
+const productLabels = products.map(p => 
+    p.product__name.length > 20 
+    ? p.product__name.substring(0,20) + "..."
+    : p.product__name
+);
+const productData = products.map(p => p.total_sold);
+
+new Chart(
+document.getElementById('topProductChart'),
+{
+type:'bar',
+data:{
+labels:productLabels,
+datasets:[{
+label:"Số lượng bán",
+data:productData,
+backgroundColor:"rgba(0,255,255,0.8)",
+borderRadius:8
+}]
+},
+options:{
+animation:{
+duration:1500
+},
+plugins:{
+legend:{labels:{color:"white"}}
+},
+scales:{
+x:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+},
+y:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+}
+}
+}
+}
+);
+// ===== DATA TỪ DJANGO =====
+const months = JSON.parse(document.getElementById('months-data').textContent);
+const revenues = JSON.parse(document.getElementById('revenues-data').textContent);
+// ===== CHART DOANH THU =====
+const ctx = document
+.getElementById('revenueChart')
+.getContext('2d')
+
+const gradient = ctx.createLinearGradient(0,0,0,400)
+
+gradient.addColorStop(0,"rgba(0,255,255,0.8)")
+gradient.addColorStop(1,"rgba(0,255,255,0.05)")
+
+new Chart(ctx,{
+type:'line',
+data:{
+labels:months,
+datasets:[{
+label:'Doanh thu',
+data:revenues,
+borderColor:'#00ffff',
+backgroundColor:gradient,
+tension:0.4,
+fill:true,
+pointRadius:6,
+pointHoverRadius:10,
+pointHoverBackgroundColor:"#00ffff",
+pointBackgroundColor:"#00ffff",
+borderWidth:3
+}]
+},
+options:{
+animation:{
+duration:2000
+},
+plugins:{
+legend:{
+labels:{color:"white"}
+},
+tooltip:{
+callbacks:{
+label:function(context){
+return context.raw.toLocaleString('vi-VN')+" đ"
+}
+}
+}
+},
+scales:{
+x:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+},
+y:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+}
+}
+}
+})
 
 // ===== CHART TRẠNG THÁI ĐƠN =====
+const pending = JSON.parse(document.getElementById('pending-data').textContent);
+const approved = JSON.parse(document.getElementById('approved-data').textContent);
+const rejected = JSON.parse(document.getElementById('rejected-data').textContent);
+const cancelled = JSON.parse(
+document.getElementById('cancelled-data').textContent
+);
 new Chart(
-    document.getElementById('statusChart'),
-    {
-        type: 'pie',
-        data: {
-            labels: ['Pending','Confirmed','Shipping','Delivered','Rejected'],
-            datasets: [{
-                data: [
-                    pending,
-                    confirmed,
-                    shipping,
-                    delivered,
-                    rejected
-                ],
-                backgroundColor: [
-                    '#f1c40f',
-                    '#3498db',
-                    '#9b59b6',
-                    '#2ecc71',
-                    '#e74c3c'
-                ]
-            }]
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: {
-                        color: "white"
+document.getElementById('statusChart'),
+{
+    type: 'pie',
+    data: {
+        labels: [
+            'Chờ xử lý',
+            'Đã duyệt',
+            'Đã hủy',
+            'Từ chối'
+        ],
+        datasets: [{
+            data: [
+                pending,
+                approved,
+                cancelled,
+                rejected
+            ],
+            backgroundColor: [
+                "#f1c40f",
+                "#2ecc71",
+                "#95a5a6",
+                "#e74c3c"
+            ]
+        }]
+    },
+    options:{
+        plugins:{
+            legend:{
+                labels:{color:"white"}
+            },
+            tooltip:{
+                callbacks:{
+                    label:function(context){
+
+                        const total = context.dataset.data.reduce(
+                            (a,b)=>a+b,0
+                        )
+
+                        const value = context.raw
+
+                        const percent = (
+                            value/total*100
+                        ).toFixed(1)
+
+                        return value+" đơn ("+percent+"%)"
                     }
                 }
             }
         }
     }
+}
+);
+const days = JSON.parse(
+document.getElementById('days-data').textContent
 );
 
+const orders = JSON.parse(
+document.getElementById('orders-data').textContent
+);
+
+new Chart(
+document.getElementById('ordersChart'),
+{
+type:'bar',
+data:{
+labels:days,
+datasets:[{
+label:"Đơn hàng",
+data:orders,
+backgroundColor:"rgba(0,255,255,0.7)",
+borderRadius:8,
+borderWidth:1
+}]
+},
+options:{
+animation:{
+duration:1800,
+easing:'easeOutQuart'
+},
+plugins:{
+legend:{
+labels:{color:"white"}
+}
+},
+scales:{
+x:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+},
+y:{
+ticks:{color:"white"},
+grid:{color:"rgba(255,255,255,0.05)"}
+}
+}
+}
+}
+);
 </script>
 {% endblock %}

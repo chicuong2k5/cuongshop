@@ -23,4 +23,9 @@ urlpatterns = [
     path('update-order/<int:pk>/<str:status>/',views.update_order_status,name='update_order_status'),
     path("product/<int:pk>/review/", views.add_review, name="add_review"),
     path('get-color-image/<int:color_id>/', views.get_color_image),
+    path(
+    "order/<int:id>/cancel/",
+    views.cancel_order,
+    name="cancel_order"
+),
 ]

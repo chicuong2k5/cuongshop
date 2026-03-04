@@ -21,6 +21,8 @@ from django.shortcuts import render, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import JsonResponse
 from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, TruncDay
+
 @staff_member_required
 def manage_orders(request):
     orders = Order.objects.all().order_by('-id')
@@ -141,15 +143,35 @@ def create_profile(sender, instance, created, **kwargs):
 
 @login_required
 def cancel_order(request, id):
-    order = get_object_or_404(Order, id=id, user=request.user)
 
-    if order.status == "pending":
-        order.status = "rejected"
-        order.save()
-        messages.success(request, "Đã hủy đơn hàng")
+    order = get_object_or_404(
+        Order,
+        id=id,
+        user=request.user
+    )
 
-    return redirect('profile')
+    if request.method == "POST":
 
+        reason = request.POST.get("reason")
+
+        if order.can_cancel:
+
+            order.status = "cancelled"
+            order.cancel_reason = reason
+            order.save()
+
+            messages.success(
+                request,
+                "Đã hủy đơn hàng"
+            )
+
+        else:
+            messages.error(
+                request,
+                "Không thể hủy đơn này"
+            )
+
+    return redirect("order_detail", id=order.id)
 @login_required
 def order_detail(request, id):
     order = get_object_or_404(Order, id=id, user=request.user)
@@ -325,8 +347,25 @@ def dashboard(request):
     top_products = OrderItem.objects.values(
         'product__name'
     ).annotate(
-        total_sold=Count('quantity')
+        total_sold = Sum('quantity')
     ).order_by('-total_sold')[:5]
+
+
+
+    top_products_json = list(top_products)
+
+    orders_by_day = Order.objects.annotate(
+            day=TruncDay('created_at')
+            ).values('day').annotate(
+            total=Count('id')
+            ).order_by('day')
+
+    days = []
+    orders_count = []
+
+    for o in orders_by_day:
+        days.append(o['day'].strftime("%d/%m"))
+        orders_count.append(o['total'])
 
     # ================= TRẠNG THÁI =================
 
@@ -336,6 +375,9 @@ def dashboard(request):
     delivered = Order.objects.filter(status='delivered').count()
     rejected = Order.objects.filter(status='rejected').count()
     cancelled = Order.objects.filter(status='cancelled').count()
+
+
+    approved = confirmed + shipping + delivered
 
     sales = Order.objects.filter(
     status='delivered'
@@ -353,8 +395,8 @@ def dashboard(request):
         revenues.append(float(s['total']))
 
 
-    months = json.dumps(months)
-    revenues = json.dumps(revenues)
+    months = months
+    revenues = revenues
 
 
     return render(request, 'dashboard.html', {
@@ -374,6 +416,11 @@ def dashboard(request):
         'cancelled': cancelled,
         'months': months,
         'revenues': revenues,
+        'approved': approved,
+        'top_products_json': top_products_json,   # thêm dòng này
+        'cancelled': cancelled,
+        'days': days,
+        'orders_count': orders_count,
     })
 def product_detail(request, pk):
     product = Product.objects.get(id=pk)

@@ -103,7 +103,49 @@
             {{ order.get_status_display }}
         </span>
     </p>
+    {% if order.status == "cancelled" %}
 
+<div class="alert alert-danger mt-3">
+
+<b>Lý do hủy:</b> {{ order.cancel_reason }}
+
+</div>
+
+{% endif %}
+{% if order.can_cancel %}
+
+<div class="mb-3">
+<button 
+class="btn btn-danger btn-sm"
+onclick="showCancelBox()">
+
+❌ Hủy đơn
+
+</button>
+</div>
+<form id="cancelForm"
+method="POST"
+action="{% url 'cancel_order' order.id %}"
+style="display:none">
+
+{% csrf_token %}
+
+<textarea
+name="reason"
+class="form-control mb-2"
+placeholder="Nhập lý do hủy..."
+required>
+</textarea>
+
+<button class="btn btn-danger">
+
+Xác nhận hủy
+
+</button>
+
+</form>
+
+{% endif %}
     <!-- TABLE -->
     <table class="table table-dark align-middle mt-4">
         <thead>
@@ -186,5 +228,13 @@
     </div>
 
 </div>
+<script>
 
+function showCancelBox(){
+
+document.getElementById("cancelForm").style.display="block"
+
+}
+
+</script>
 {% endblock %}

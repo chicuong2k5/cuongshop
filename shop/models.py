@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Sum, Avg
-
+from django.utils import timezone
 # ================= CATEGORY =================
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -51,9 +51,8 @@ class Product(models.Model):
 
     @property
     def avg_rating(self):
-        return self.review_set.aggregate(
-            avg=Avg('rating')
-        )['avg'] or 5
+        rating = self.review_set.aggregate(avg=Avg('rating'))['avg']
+        return round(rating or 0, 1)
 # ================= PRODUCT COLOR =================
 class ProductColor(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="colors")
@@ -97,9 +96,9 @@ class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
-    def total_price(self):
-        return self.product.final_price() * self.quantity
-
+    @property
+    def final_price(self):
+        return self.price * (100 - self.discount_percent) / 100
 # ================= ORDER =================
 class Order(models.Model):
 
@@ -120,8 +119,11 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    created_at = models.DateTimeField(default=timezone.now)
+    cancel_reason = models.TextField(
+    blank=True,
+    null=True
+)
     full_name = models.CharField(max_length=200, null=True)
     address = models.TextField( null=True)
     phone = models.CharField(max_length=20, null=True)
@@ -130,10 +132,10 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.user.username}"
+    
     @property
-    def final_price(self):
-        return self.price * (100 - self.discount_percent) / 100
-
+    def can_cancel(self):
+        return self.status in ["pending", "confirmed"]
 
 # ================= ORDER ITEM =================
 class OrderItem(models.Model):
