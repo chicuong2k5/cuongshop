@@ -1,4 +1,4 @@
-# CUONG SHOP - FULL 10 ĐIỂM
+# Du an python3
 
 ## Cài đặt
 pip install django
